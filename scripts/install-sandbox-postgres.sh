@@ -84,6 +84,9 @@ if [ ! -f "$PREFIX/lib/vector.so" ]; then
 	rm -rf "$tmp"
 fi
 
+# Re-export after extract: sandbox-env.sh only sets this when usr/lib already exists.
+export LD_LIBRARY_PATH="${DEP}/usr/lib:${DEP}/lib${LD_LIBRARY_PATH:+:$LD_LIBRARY_PATH}"
+
 ln -sfn "$PREFIX/bin/pg_ctl" "${HOME}/.local/bin/pg_ctl"
 ln -sfn "$PREFIX/bin/postgres" "${HOME}/.local/bin/postgres"
 ln -sfn "$PREFIX/bin/psql" "${HOME}/.local/bin/psql-local"
@@ -92,6 +95,13 @@ ln -sfn "$PREFIX/bin/pg_isready" "${HOME}/.local/bin/pg_isready"
 
 if [ ! -f "$PGDATA/PG_VERSION" ]; then
 	echo "initializing cluster at $PGDATA"
+	rm -rf "$PGDATA"
+	mkdir -p "$PGDATA"
+	if ! "$PREFIX/bin/postgres" --version >/dev/null; then
+		echo "postgres cannot load (check LD_LIBRARY_PATH=$LD_LIBRARY_PATH)" >&2
+		ldd "$PREFIX/bin/postgres" >&2 || true
+		exit 1
+	fi
 	pwfile="$(mktemp)"
 	echo absencam > "$pwfile"
 	"$PREFIX/bin/initdb" \
