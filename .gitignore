@@ -1,0 +1,31 @@
+# Dependencies and build output
+node_modules/
+dist/
+dist-ssr/
+apps/api/bin/
+apps/api/tmp/
+*.exe
+*.test
+*.out
+coverage/
+.vite/
+
+# Env and secrets
+.env
+.env.local
+.env.*.local
+!.env.example
+
+# Logs and OS
+logs/
+*.log
+.DS_Store
+
+# Editors
+.idea/
+.vscode/*
+!.vscode/extensions.json
+*.sw?
+
+# Go
+vendor/
