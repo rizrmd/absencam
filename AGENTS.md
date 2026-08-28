@@ -99,6 +99,7 @@ Copy `.env.example` to `.env`. The API reads process env (not a `.env` parser). 
 | `CORS_ORIGINS` | `http://localhost:5173` | Comma-separated allowlist (`*` allowed) |
 | `APP_ENV` | `development` | Logged and returned from `/api/v1/info` |
 | `VITE_API_BASE_URL` | empty | Leave empty in dev so the Vite proxy is used |
+| `WEB_DIST` | empty | If set, the API serves the Vite production build (custom sandbox uses this on `:3000`) |
 
 The API **starts even if Postgres is down**. `GET /api/health` is liveness. `GET /api/ready` pings the database and returns 503 when it is unavailable.
 
@@ -140,6 +141,12 @@ The API **starts even if Postgres is down**. `GET /api/health` is liveness. `GET
 - Do not rewrite git identity; commits are authored as the human org member.
 - Do not add Coolify / fastdeploy / host inject deploy paths.
 - Do not expand scope past the asked feature.
+
+## Custom sandbox deploy
+
+Public URL: `https://absencam-rizprive.fural.space/` (hostname bound to custom sandbox `absencam`, port **3000**).
+
+`scripts/fural-deploy.sh` (and `fural-agent repos ship`) applies `scripts/sandbox-boot.sh` and re-runs it. Boot clones this repo, installs native Postgres + Go under `$HOME`, builds the SPA, and **execs** the API on `:3000` so it serves both `/api` and the static frontend. A 502 means nothing is listening on that sandbox port.
 
 ## Verification (minimum)
 

@@ -1,4 +1,4 @@
-.PHONY: help db-up db-down db-logs api web test test-api build tidy fmt models
+.PHONY: help db-up db-down db-logs api web test test-api build tidy fmt models deploy
 
 API_DIR := apps/api
 WEB_DIR := apps/web
@@ -15,6 +15,7 @@ help:
 	@echo "  make build      Build API binary and web production bundle"
 	@echo "  make tidy       go mod tidy"
 	@echo "  make fmt        gofmt + (optional) frontend lint"
+	@echo "  make deploy     Push-ready: scripts/fural-deploy.sh → custom sandbox :3000"
 
 db-up:
 	./scripts/sandbox-postgres.sh start
@@ -49,3 +50,6 @@ tidy:
 fmt:
 	cd $(API_DIR) && gofmt -w .
 	cd $(WEB_DIR) && npm run lint
+
+deploy:
+	./scripts/fural-deploy.sh

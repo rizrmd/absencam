@@ -35,13 +35,16 @@ func New(cfg config.Config, pool *pgxpool.Pool, log *slog.Logger) *Server {
 	mux.HandleFunc("GET /api/v1/people", s.handleListPeople)
 	mux.HandleFunc("POST /api/v1/faces/enroll", s.handleEnroll)
 	mux.HandleFunc("POST /api/v1/faces/scan", s.handleScan)
+	if strings.TrimSpace(cfg.WebDist) != "" {
+		mux.Handle("/", spaHandler(cfg.WebDist))
+	}
 
 	s.http = &http.Server{
 		Addr:              cfg.Addr,
 		Handler:           s.cors(mux),
 		ReadHeaderTimeout: 5 * time.Second,
-		ReadTimeout:       15 * time.Second,
-		WriteTimeout:      15 * time.Second,
+		ReadTimeout:       30 * time.Second,
+		WriteTimeout:      120 * time.Second,
 		IdleTimeout:       60 * time.Second,
 	}
 	return s

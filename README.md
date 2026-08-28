@@ -31,6 +31,8 @@ make api            # API on :8080
 make web            # frontend on :3000 (proxies /api)
 ```
 
+Public sandbox: [https://absencam-rizprive.fural.space/](https://absencam-rizprive.fural.space/) (custom sandbox boot on `:3000`). Deploy with `make deploy` / `scripts/fural-deploy.sh`.
+
 Health check: `GET http://localhost:8080/api/health`  
 Readiness (Postgres): `GET http://localhost:8080/api/ready`
 

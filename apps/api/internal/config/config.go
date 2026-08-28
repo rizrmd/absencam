@@ -12,6 +12,7 @@ type Config struct {
 	Env                string
 	Addr               string
 	DatabaseURL        string
+	WebDist            string
 	CORSOrigins        []string
 	FaceMatchThreshold float64
 }
@@ -24,6 +25,7 @@ func Load() Config {
 		Env:                getenv("APP_ENV", "development"),
 		Addr:               getenv("API_ADDR", ":8080"),
 		DatabaseURL:        getenv("DATABASE_URL", "postgres://absencam:absencam@127.0.0.1:5432/absencam?sslmode=disable"),
+		WebDist:            getenv("WEB_DIST", ""),
 		CORSOrigins:        origins,
 		FaceMatchThreshold: getenvFloat("FACE_MATCH_THRESHOLD", 0.40),
 	}
