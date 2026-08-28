@@ -9,8 +9,11 @@ export PATH="${PREFIX}/bin:${PATH}"
 if [ -d "${DEP}/usr/lib" ] || [ -d "${DEP}/lib" ]; then
 	export LD_LIBRARY_PATH="${DEP}/usr/lib:${DEP}/lib${LD_LIBRARY_PATH:+:$LD_LIBRARY_PATH}"
 fi
-# Do not export ICU_DATA globally: Node/npm on Alpine 3.23 (ICU 76) crash if they
-# pick up the PostgreSQL 74 data dir. Postgres finds ICU via LD_LIBRARY_PATH.
+if [ -f "${DEP}/usr/share/icu/74.2/icudt74l.dat" ]; then
+	export ICU_DATA="${DEP}/usr/share/icu/74.2"
+fi
+# This file is only sourced by PostgreSQL/API commands. The sandbox boot unsets
+# ICU_DATA and clears LD_LIBRARY_PATH before running Node (which uses ICU 76).
 export PGDATA
 export PGHOST=127.0.0.1
 export PGPORT=5432

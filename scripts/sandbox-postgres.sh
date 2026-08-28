@@ -35,6 +35,10 @@ case "$cmd" in
       "$PREFIX/bin/pg_ctl" -D "$PGDATA" -l "$LOG" -o "-k /tmp" start
     fi
     "$PREFIX/bin/pg_isready" -h 127.0.0.1 -p 5432 -U absencam
+    if ! "$PREFIX/bin/psql" -h /tmp -U absencam -d postgres -tAc \
+      "SELECT 1 FROM pg_database WHERE datname = 'absencam'" | grep -qx 1; then
+      "$PREFIX/bin/createdb" -h /tmp -U absencam absencam
+    fi
     ;;
   stop)
     "$PREFIX/bin/pg_ctl" -D "$PGDATA" stop -m fast || true

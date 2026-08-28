@@ -55,7 +55,7 @@ fi
 
 # ICU / Kerberos shared libs (theseus musl postgres is dynamically linked).
 for apk in \
-	icu-data-en-74.2-r1.apk \
+	icu-data-full-74.2-r1.apk \
 	icu-libs-74.2-r1.apk \
 	libcom_err-1.47.1-r1.apk \
 	keyutils-libs-1.6.3-r4.apk \
@@ -86,6 +86,7 @@ fi
 
 # Re-export after extract: sandbox-env.sh only sets this when usr/lib already exists.
 export LD_LIBRARY_PATH="${DEP}/usr/lib:${DEP}/lib${LD_LIBRARY_PATH:+:$LD_LIBRARY_PATH}"
+export ICU_DATA="${DEP}/usr/share/icu/74.2"
 
 ln -sfn "$PREFIX/bin/pg_ctl" "${HOME}/.local/bin/pg_ctl"
 ln -sfn "$PREFIX/bin/postgres" "${HOME}/.local/bin/postgres"
