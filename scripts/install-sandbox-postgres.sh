@@ -13,7 +13,9 @@ PGDATA="${HOME}/.local/pgdata"
 PG_VER="18.6.0"
 PG_TARGET="x86_64-unknown-linux-musl"
 PG_URL="https://github.com/theseus-rs/postgresql-binaries/releases/download/${PG_VER}/postgresql-${PG_VER}-${PG_TARGET}.tar.gz"
-ALPINE_MAIN="https://dl-cdn.alpinelinux.org/alpine/v3.23/main/x86_64"
+# Pin Alpine 3.21 so ICU stays at libicu*.so.74 (theseus musl postgres is linked to 74).
+# Current Alpine 3.23 ships ICU 76, which will not load.
+ALPINE_MAIN="https://dl-cdn.alpinelinux.org/alpine/v3.21/main/x86_64"
 ALPINE_COMMUNITY="https://dl-cdn.alpinelinux.org/alpine/v3.23/community/x86_64"
 
 mkdir -p "${HOME}/.local/bin" "$PREFIX" "$APKDIR" "$DEP"
@@ -55,8 +57,9 @@ fi
 for apk in \
 	icu-data-en-74.2-r1.apk \
 	icu-libs-74.2-r1.apk \
-	libcom_err-1.47.0-r5.apk \
-	keyutils-libs-1.6.3-r3.apk \
+	libcom_err-1.47.1-r1.apk \
+	keyutils-libs-1.6.3-r4.apk \
+	libverto-0.3.2-r2.apk \
 	krb5-libs-1.21.3-r0.apk
 do
 	download "${ALPINE_MAIN}/${apk}" "${APKDIR}/${apk}"

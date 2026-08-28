@@ -42,15 +42,19 @@ sync_repo() {
 }
 
 build_web() {
+	# Postgres env (ICU 74 via LD_LIBRARY_PATH) must not leak into Node (ICU 76).
+	unset ICU_DATA || true
+	export LD_LIBRARY_PATH=""
 	cd "$REPO"
 	./scripts/download-models.sh
 	cd "$REPO/apps/web"
 	if [ -f package-lock.json ]; then
-		npm ci
+		npm ci --no-audit --no-fund
 	else
-		npm install
+		npm install --no-audit --no-fund
 	fi
-	npm run build
+	# Skip tsc; vite build is enough to produce dist/ for the API to serve.
+	npx vite build
 }
 
 build_api() {
@@ -60,10 +64,13 @@ build_api() {
 
 install_go
 sync_repo
-# shellcheck disable=SC1091
-. "$REPO/scripts/sandbox-env.sh"
-"$REPO/scripts/install-sandbox-postgres.sh" || echo "postgres install failed (API will start degraded)"
-"$REPO/scripts/sandbox-postgres.sh" start || echo "postgres start failed (API will start degraded)"
+# Run postgres install/start in a subshell so LD_LIBRARY_PATH does not leak into npm.
+(
+	# shellcheck disable=SC1091
+	. "$REPO/scripts/sandbox-env.sh"
+	"$REPO/scripts/install-sandbox-postgres.sh"
+	"$REPO/scripts/sandbox-postgres.sh" start
+) || echo "postgres install/start failed (API will start degraded)"
 build_web
 build_api
 
