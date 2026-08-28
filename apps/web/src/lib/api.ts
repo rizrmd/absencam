@@ -70,3 +70,9 @@ export function scanFace(embedding: number[], modelId = FACE_MODEL_ID) {
     body: JSON.stringify({ embedding, model_id: modelId }),
   })
 }
+
+export function deletePerson(id: string) {
+  return request<{ deleted: boolean; person: Person }>(`/api/v1/people/${id}`, {
+    method: 'DELETE',
+  })
+}

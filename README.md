@@ -41,6 +41,7 @@ Face APIs:
 - `POST /api/v1/faces/enroll` — `{ code, full_name, embeddings: number[][] }`
 - `POST /api/v1/faces/scan` — `{ embedding: number[] }`
 - `GET /api/v1/people`
+- `DELETE /api/v1/people/{id}` — hapus orang + embedding (attendance events jadi `person_id` null)
 
 Embeddings are computed **in the browser** (MediaPipe detect + OpenCV SFace 128-d). The Go API never runs a face model (no GPU, `CGO_ENABLED=0`). PostgreSQL stores `vector(128)` with an HNSW cosine index.
 

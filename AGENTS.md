@@ -110,6 +110,10 @@ The API **starts even if Postgres is down**. `GET /api/health` is liveness. `GET
   - `GET /api/health` — process up
   - `GET /api/ready` — Postgres ping
   - `GET /api/v1/info` — name, version, env
+  - `GET /api/v1/people` — enrolled people
+  - `DELETE /api/v1/people/{id}` — delete a person and embeddings
+  - `POST /api/v1/faces/enroll` — upsert person + store embeddings
+  - `POST /api/v1/faces/scan` — nearest-neighbor match
 - Version new resource APIs as `/api/v1/...`.
 - Handlers stay small. Put SQL and domain logic in `internal/` packages, not `cmd/api`.
 - `cmd/api/main.go` wires config, db, HTTP, and graceful shutdown. Do not put business logic there.

@@ -2,6 +2,7 @@ package httpserver
 
 import (
 	"encoding/json"
+	"errors"
 	"net/http"
 
 	"github.com/rizrmd/absencam/apps/api/internal/faces"
@@ -19,6 +20,28 @@ func (s *Server) handleListPeople(w http.ResponseWriter, r *http.Request) {
 		return
 	}
 	writeJSON(w, http.StatusOK, map[string]any{"people": people})
+}
+
+func (s *Server) handleDeletePerson(w http.ResponseWriter, r *http.Request) {
+	if s.faces == nil {
+		writeJSON(w, http.StatusServiceUnavailable, map[string]string{"error": "database unavailable"})
+		return
+	}
+
+	person, err := s.faces.DeletePerson(r.Context(), r.PathValue("id"))
+	if err != nil {
+		switch {
+		case errors.Is(err, faces.ErrInvalidID):
+			writeJSON(w, http.StatusBadRequest, map[string]string{"error": err.Error()})
+		case errors.Is(err, faces.ErrNotFound):
+			writeJSON(w, http.StatusNotFound, map[string]string{"error": err.Error()})
+		default:
+			s.log.Error("delete person", "err", err)
+			writeJSON(w, http.StatusInternalServerError, map[string]string{"error": "delete person failed"})
+		}
+		return
+	}
+	writeJSON(w, http.StatusOK, map[string]any{"deleted": true, "person": person})
 }
 
 func (s *Server) handleEnroll(w http.ResponseWriter, r *http.Request) {

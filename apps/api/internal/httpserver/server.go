@@ -33,6 +33,7 @@ func New(cfg config.Config, pool *pgxpool.Pool, log *slog.Logger) *Server {
 	mux.HandleFunc("GET /api/ready", s.handleReady)
 	mux.HandleFunc("GET /api/v1/info", s.handleInfo)
 	mux.HandleFunc("GET /api/v1/people", s.handleListPeople)
+	mux.HandleFunc("DELETE /api/v1/people/{id}", s.handleDeletePerson)
 	mux.HandleFunc("POST /api/v1/faces/enroll", s.handleEnroll)
 	mux.HandleFunc("POST /api/v1/faces/scan", s.handleScan)
 	if strings.TrimSpace(cfg.WebDist) != "" {

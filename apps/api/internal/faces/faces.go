@@ -2,13 +2,20 @@ package faces
 
 import (
 	"context"
+	"errors"
 	"fmt"
 	"math"
 	"strconv"
 	"strings"
 	"time"
 
+	"github.com/jackc/pgx/v5"
 	"github.com/jackc/pgx/v5/pgxpool"
+)
+
+var (
+	ErrNotFound  = errors.New("person not found")
+	ErrInvalidID = errors.New("invalid person id")
 )
 
 const (
@@ -98,6 +105,27 @@ func (s *Store) ListPeople(ctx context.Context) ([]Person, error) {
 		out = append(out, p)
 	}
 	return out, rows.Err()
+}
+
+func (s *Store) DeletePerson(ctx context.Context, id string) (Person, error) {
+	id = strings.TrimSpace(id)
+	if !validUUID(id) {
+		return Person{}, ErrInvalidID
+	}
+
+	var p Person
+	err := s.pool.QueryRow(ctx, `
+		DELETE FROM people
+		WHERE id = $1::uuid
+		RETURNING id::text, code, full_name, created_at
+	`, id).Scan(&p.ID, &p.Code, &p.FullName, &p.CreatedAt)
+	if err != nil {
+		if errors.Is(err, pgx.ErrNoRows) {
+			return Person{}, ErrNotFound
+		}
+		return Person{}, err
+	}
+	return p, nil
 }
 
 func (s *Store) Enroll(ctx context.Context, in EnrollInput) (EnrollResult, error) {
@@ -237,6 +265,26 @@ func (s *Store) Scan(ctx context.Context, in ScanInput) (ScanResult, error) {
 		result.EventID = eventID
 	}
 	return result, nil
+}
+
+func validUUID(id string) bool {
+	if len(id) != 36 {
+		return false
+	}
+	for i := 0; i < 36; i++ {
+		c := id[i]
+		switch i {
+		case 8, 13, 18, 23:
+			if c != '-' {
+				return false
+			}
+		default:
+			if (c < '0' || c > '9') && (c < 'a' || c > 'f') && (c < 'A' || c > 'F') {
+				return false
+			}
+		}
+	}
+	return true
 }
 
 func ValidateEmbedding(emb []float32, dim int) error {

@@ -1,5 +1,5 @@
 import { useCallback, useEffect, useRef, useState } from 'react'
-import { Camera, Check, ScanLine, UserPlus, Users } from 'lucide-react'
+import { Camera, Check, ScanLine, Trash2, UserPlus, Users } from 'lucide-react'
 
 import { Badge } from '@/components/ui/badge'
 import { Button } from '@/components/ui/button'
@@ -14,6 +14,7 @@ import { Input } from '@/components/ui/input'
 import { Label } from '@/components/ui/label'
 import { Separator } from '@/components/ui/separator'
 import {
+  deletePerson,
   enrollFace,
   listPeople,
   scanFace,
@@ -62,6 +63,7 @@ export function CameraApp() {
   const [message, setMessage] = useState<string | null>(null)
   const [scanResult, setScanResult] = useState<ScanResponse | null>(null)
   const [busy, setBusy] = useState(false)
+  const [confirmDeleteId, setConfirmDeleteId] = useState<string | null>(null)
 
   const loadPeople = useCallback(async () => {
     try {
@@ -178,6 +180,24 @@ export function CameraApp() {
       )
     } catch (err) {
       setMessage(err instanceof Error ? err.message : 'gagal embed')
+    } finally {
+      setBusy(false)
+    }
+  }
+
+  async function removePerson(person: Person) {
+    if (confirmDeleteId !== person.id) {
+      setConfirmDeleteId(person.id)
+      return
+    }
+    setBusy(true)
+    try {
+      await deletePerson(person.id)
+      setMessage(`Dihapus: ${person.full_name}`)
+      setConfirmDeleteId(null)
+      await loadPeople()
+    } catch (err) {
+      setMessage(err instanceof Error ? err.message : 'hapus gagal')
     } finally {
       setBusy(false)
     }
@@ -419,8 +439,40 @@ export function CameraApp() {
                 people.map((p) => (
                   <div key={p.id}>
                     <div className="flex items-center justify-between gap-2 py-1.5 text-sm">
-                      <span className="font-medium">{p.full_name}</span>
-                      <span className="text-muted-foreground">{p.code}</span>
+                      <div className="min-w-0">
+                        <span className="font-medium">{p.full_name}</span>
+                        <span className="ml-2 text-muted-foreground">{p.code}</span>
+                      </div>
+                      {confirmDeleteId === p.id ? (
+                        <div className="flex shrink-0 items-center gap-1">
+                          <Button
+                            size="xs"
+                            variant="destructive"
+                            onClick={() => void removePerson(p)}
+                            disabled={busy}
+                          >
+                            Yakin?
+                          </Button>
+                          <Button
+                            size="xs"
+                            variant="ghost"
+                            onClick={() => setConfirmDeleteId(null)}
+                            disabled={busy}
+                          >
+                            Batal
+                          </Button>
+                        </div>
+                      ) : (
+                        <Button
+                          size="icon-xs"
+                          variant="ghost"
+                          onClick={() => setConfirmDeleteId(p.id)}
+                          aria-label={`Hapus ${p.full_name}`}
+                          disabled={busy}
+                        >
+                          <Trash2 />
+                        </Button>
+                      )}
                     </div>
                     <Separator />
                   </div>

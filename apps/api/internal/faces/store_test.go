@@ -2,6 +2,7 @@ package faces
 
 import (
 	"context"
+	"errors"
 	"math"
 	"math/rand"
 	"os"
@@ -84,5 +85,46 @@ func TestEnrollAndScan(t *testing.T) {
 	}
 	if miss.Matched {
 		t.Fatalf("random vector should not match, got %+v", miss)
+	}
+}
+
+func TestDeletePerson(t *testing.T) {
+	pool := testPool(t)
+	store := NewStore(pool, 0.35)
+	ctx := context.Background()
+
+	code := "del-" + time.Now().Format("150405.000000")
+	emb := randomUnit(time.Now().UnixNano())
+	out, err := store.Enroll(ctx, EnrollInput{
+		Code:       code,
+		FullName:   "Delete Me",
+		Embeddings: [][]float32{emb},
+		ModelID:    DefaultModelID,
+	})
+	if err != nil {
+		t.Fatalf("enroll: %v", err)
+	}
+
+	deleted, err := store.DeletePerson(ctx, out.Person.ID)
+	if err != nil {
+		t.Fatalf("delete: %v", err)
+	}
+	if deleted.Code != code {
+		t.Fatalf("deleted code = %q, want %q", deleted.Code, code)
+	}
+
+	scan, err := store.Scan(ctx, ScanInput{Embedding: emb, ModelID: DefaultModelID})
+	if err != nil {
+		t.Fatalf("scan after delete: %v", err)
+	}
+	if scan.Matched {
+		t.Fatalf("deleted person should not match, got %+v", scan)
+	}
+
+	if _, err := store.DeletePerson(ctx, out.Person.ID); !errors.Is(err, ErrNotFound) {
+		t.Fatalf("second delete err = %v, want ErrNotFound", err)
+	}
+	if _, err := store.DeletePerson(ctx, "not-a-uuid"); !errors.Is(err, ErrInvalidID) {
+		t.Fatalf("invalid id err = %v, want ErrInvalidID", err)
 	}
 }

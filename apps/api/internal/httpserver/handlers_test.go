@@ -79,6 +79,24 @@ func TestEnrollWithoutDB(t *testing.T) {
 	}
 }
 
+func TestDeletePersonWithoutDB(t *testing.T) {
+	t.Parallel()
+
+	srv := New(config.Config{
+		AppName:     "absencam-api",
+		Env:         "test",
+		Addr:        ":0",
+		CORSOrigins: []string{"*"},
+	}, nil, slog.New(slog.NewTextHandler(os.Stdout, nil)))
+
+	req := httptest.NewRequest(http.MethodDelete, "/api/v1/people/00000000-0000-0000-0000-000000000001", nil)
+	rec := httptest.NewRecorder()
+	srv.http.Handler.ServeHTTP(rec, req)
+	if rec.Code != http.StatusServiceUnavailable {
+		t.Fatalf("status = %d, want 503", rec.Code)
+	}
+}
+
 func TestScanRejectsBadJSON(t *testing.T) {
 	t.Parallel()
 
