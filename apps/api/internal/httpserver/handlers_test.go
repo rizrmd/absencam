@@ -6,6 +6,7 @@ import (
 	"net/http"
 	"net/http/httptest"
 	"os"
+	"strings"
 	"testing"
 
 	"github.com/rizrmd/absencam/apps/api/internal/config"
@@ -55,6 +56,45 @@ func TestReadyWithoutDB(t *testing.T) {
 
 	if rec.Code != http.StatusServiceUnavailable {
 		t.Fatalf("status = %d, want 503", rec.Code)
+	}
+}
+
+func TestEnrollWithoutDB(t *testing.T) {
+	t.Parallel()
+
+	srv := New(config.Config{
+		AppName:     "absencam-api",
+		Env:         "test",
+		Addr:        ":0",
+		CORSOrigins: []string{"*"},
+	}, nil, slog.New(slog.NewTextHandler(os.Stdout, nil)))
+
+	req := httptest.NewRequest(http.MethodPost, "/api/v1/faces/enroll", strings.NewReader(`{"code":"e1","full_name":"Ada"}`))
+	req.Header.Set("Content-Type", "application/json")
+	rec := httptest.NewRecorder()
+	srv.http.Handler.ServeHTTP(rec, req)
+	if rec.Code != http.StatusServiceUnavailable {
+		t.Fatalf("status = %d, want 503", rec.Code)
+	}
+}
+
+func TestScanRejectsBadJSON(t *testing.T) {
+	t.Parallel()
+
+	srv := New(config.Config{
+		AppName:            "absencam-api",
+		Env:                "test",
+		Addr:               ":0",
+		CORSOrigins:        []string{"*"},
+		FaceMatchThreshold: 0.4,
+	}, nil, slog.New(slog.NewTextHandler(os.Stdout, nil)))
+
+	req := httptest.NewRequest(http.MethodPost, "/api/v1/faces/scan", strings.NewReader(`{`))
+	req.Header.Set("Content-Type", "application/json")
+	rec := httptest.NewRecorder()
+	srv.http.Handler.ServeHTTP(rec, req)
+	if rec.Code != http.StatusServiceUnavailable {
+		t.Fatalf("status = %d, want 503 without db", rec.Code)
 	}
 }
 

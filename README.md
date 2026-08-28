@@ -19,17 +19,28 @@ apps/web    Vite + React SPA
 
 See [AGENTS.md](./AGENTS.md) for conventions and how to extend this repo.
 
-## Quick start
+## Quick start (sandbox, no docker-compose)
+
+Postgres + pgvector run natively under `$HOME/.local` (see `scripts/sandbox-postgres.sh`).
 
 ```bash
 cp .env.example .env
-make db-up          # PostgreSQL on :5432
+make db-up          # PostgreSQL 18 + pgvector on :5432
+make models         # SFace ONNX into apps/web/public/models
 make api            # API on :8080
-make web            # frontend on :5173 (proxies /api)
+make web            # frontend on :3000 (proxies /api)
 ```
 
 Health check: `GET http://localhost:8080/api/health`  
 Readiness (Postgres): `GET http://localhost:8080/api/ready`
+
+Face APIs:
+
+- `POST /api/v1/faces/enroll` — `{ code, full_name, embeddings: number[][] }`
+- `POST /api/v1/faces/scan` — `{ embedding: number[] }`
+- `GET /api/v1/people`
+
+Embeddings are computed **in the browser** (MediaPipe detect + OpenCV SFace 128-d). The Go API never runs a face model (no GPU, `CGO_ENABLED=0`). PostgreSQL stores `vector(128)` with an HNSW cosine index.
 
 ## Scripts
 

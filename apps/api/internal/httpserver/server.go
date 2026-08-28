@@ -12,21 +12,29 @@ import (
 	"github.com/jackc/pgx/v5/pgxpool"
 
 	"github.com/rizrmd/absencam/apps/api/internal/config"
+	"github.com/rizrmd/absencam/apps/api/internal/faces"
 )
 
 type Server struct {
-	cfg  config.Config
-	pool *pgxpool.Pool
-	log  *slog.Logger
-	http *http.Server
+	cfg   config.Config
+	pool  *pgxpool.Pool
+	faces *faces.Store
+	log   *slog.Logger
+	http  *http.Server
 }
 
 func New(cfg config.Config, pool *pgxpool.Pool, log *slog.Logger) *Server {
 	s := &Server{cfg: cfg, pool: pool, log: log}
+	if pool != nil {
+		s.faces = faces.NewStore(pool, cfg.FaceMatchThreshold)
+	}
 	mux := http.NewServeMux()
 	mux.HandleFunc("GET /api/health", s.handleHealth)
 	mux.HandleFunc("GET /api/ready", s.handleReady)
 	mux.HandleFunc("GET /api/v1/info", s.handleInfo)
+	mux.HandleFunc("GET /api/v1/people", s.handleListPeople)
+	mux.HandleFunc("POST /api/v1/faces/enroll", s.handleEnroll)
+	mux.HandleFunc("POST /api/v1/faces/scan", s.handleScan)
 
 	s.http = &http.Server{
 		Addr:              cfg.Addr,

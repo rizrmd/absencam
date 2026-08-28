@@ -22,7 +22,7 @@ The product is attendance / absence capture. Keep the scaffold thin until a feat
 | Frontend | Vite 8 + React 19 + TypeScript | App lives in `apps/web` |
 | UI | Tailwind CSS v4 + shadcn/ui (`base-nova`, Base UI, Geist) | Components copied into `src/components/ui` |
 | Client state | Zustand | No Redux. Server cache can be added later if needed. |
-| Local Postgres | `docker-compose.yml` (`postgres:17-alpine`) | User/password/db: `absencam` |
+| Local Postgres | Native in the sandbox (`scripts/sandbox-postgres.sh`, PostgreSQL 18 + pgvector) | User/password/db: `absencam`. Do **not** use docker-compose for this app. |
 
 Do **not** switch to Next.js, Python, FastAPI, Vue, Chi/Gin/Echo, Prisma, or Redux unless the human asks.
 
@@ -33,7 +33,7 @@ Do **not** switch to Next.js, Python, FastAPI, Vue, Chi/Gin/Echo, Prisma, or Red
 ├── AGENTS.md                 # this file
 ├── README.md
 ├── Makefile
-├── docker-compose.yml
+├── scripts/                  # sandbox Postgres + model download
 ├── .env.example
 ├── apps/
 │   ├── api/                  # Go module
@@ -61,9 +61,10 @@ Run from the **repo root**.
 
 ```bash
 cp .env.example .env
-make db-up          # docker compose up -d postgres
+make db-up          # native Postgres + pgvector on :5432
+make models         # SFace ONNX into apps/web/public/models
 make api            # go run ./cmd/api  → :8080
-make web            # vite dev          → :5173 (proxies /api)
+make web            # vite dev          → :3000 (proxies /api)
 make test           # go test ./...
 make build          # CGO_ENABLED=0 go build + vite build
 make tidy           # go mod tidy

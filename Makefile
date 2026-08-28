@@ -1,4 +1,4 @@
-.PHONY: help db-up db-down db-logs api web test test-api build tidy fmt
+.PHONY: help db-up db-down db-logs api web test test-api build tidy fmt models
 
 API_DIR := apps/api
 WEB_DIR := apps/web
@@ -6,26 +6,30 @@ export CGO_ENABLED := 0
 
 help:
 	@echo "Absencam monorepo"
-	@echo "  make db-up      Start PostgreSQL via docker compose"
+	@echo "  make db-up      Start sandbox-local PostgreSQL + pgvector"
 	@echo "  make db-down    Stop PostgreSQL"
 	@echo "  make api        Run the Go API on :8080"
-	@echo "  make web        Run the Vite dev server on :5173"
+	@echo "  make web        Run the Vite dev server on :3000"
+	@echo "  make models     Download SFace ONNX into apps/web/public/models"
 	@echo "  make test       Run API tests"
 	@echo "  make build      Build API binary and web production bundle"
 	@echo "  make tidy       go mod tidy"
 	@echo "  make fmt        gofmt + (optional) frontend lint"
 
 db-up:
-	docker compose up -d postgres
+	./scripts/sandbox-postgres.sh start
 
 db-down:
-	docker compose down
+	./scripts/sandbox-postgres.sh stop
 
 db-logs:
-	docker compose logs -f postgres
+	tail -f $(HOME)/.local/pgdata/postgres.log
+
+models:
+	./scripts/download-models.sh
 
 api:
-	cd $(API_DIR) && go run ./cmd/api
+	. ./scripts/sandbox-env.sh && cd $(API_DIR) && go run ./cmd/api
 
 web:
 	cd $(WEB_DIR) && npm run dev
@@ -33,7 +37,7 @@ web:
 test: test-api
 
 test-api:
-	cd $(API_DIR) && go test ./...
+	. ./scripts/sandbox-env.sh && cd $(API_DIR) && go test ./...
 
 build:
 	cd $(API_DIR) && CGO_ENABLED=0 go build -o bin/api ./cmd/api

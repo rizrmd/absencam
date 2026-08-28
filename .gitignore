@@ -29,3 +29,6 @@ logs/
 
 # Go
 vendor/
+
+# Downloaded ONNX weights (see scripts/download-models.sh)
+apps/web/public/models/*.onnx
