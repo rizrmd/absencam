@@ -1,5 +1,5 @@
 import { useCallback, useEffect, useRef, useState } from 'react'
-import { Camera, ScanLine, UserPlus, Users } from 'lucide-react'
+import { Camera, Check, ScanLine, UserPlus, Users } from 'lucide-react'
 
 import { Badge } from '@/components/ui/badge'
 import { Button } from '@/components/ui/button'
@@ -29,6 +29,14 @@ import {
 import { useApiStatus } from '@/stores/api-status'
 
 type Mode = 'enroll' | 'scan'
+
+const captureGuides = [
+  { title: 'Lurus', instruction: 'Hadapkan wajah lurus dan sejajar dengan kamera.' },
+  { title: 'Kiri', instruction: 'Tolehkan wajah sekitar 20° ke kiri Anda.' },
+  { title: 'Kanan', instruction: 'Tolehkan wajah sekitar 20° ke kanan Anda.' },
+  { title: 'Atas', instruction: 'Angkat dagu sedikit, sekitar 10°, mata tetap ke kamera.' },
+  { title: 'Bawah', instruction: 'Turunkan dagu sedikit, sekitar 10°, mata tetap ke kamera.' },
+] as const
 
 export function CameraApp() {
   const videoRef = useRef<HTMLVideoElement>(null)
@@ -150,6 +158,7 @@ export function CameraApp() {
   }, [stopCamera])
 
   async function captureSample() {
+    if (samples.length >= captureGuides.length) return
     const video = videoRef.current
     if (!video) return
     const det = detectFace(video)
@@ -160,8 +169,13 @@ export function CameraApp() {
     setBusy(true)
     try {
       const embedding = await embedFace(video, det.landmarks)
-      setSamples((prev) => [...prev, embedding].slice(0, 5))
-      setMessage(`Sampel ${Math.min(samples.length + 1, 5)} tersimpan`)
+      setSamples((prev) => [...prev, embedding].slice(0, captureGuides.length))
+      const captured = samples.length + 1
+      setMessage(
+        captured === captureGuides.length
+          ? 'Semua sampel tersimpan. Data siap didaftarkan.'
+          : `Sampel ${captured} tersimpan. Ikuti panduan berikutnya.`
+      )
     } catch (err) {
       setMessage(err instanceof Error ? err.message : 'gagal embed')
     } finally {
@@ -174,8 +188,8 @@ export function CameraApp() {
       setMessage('Isi kode dan nama')
       return
     }
-    if (samples.length < 1) {
-      setMessage('Ambil minimal 1 sampel wajah')
+    if (samples.length < captureGuides.length) {
+      setMessage(`Lengkapi semua ${captureGuides.length} sampel wajah`)
       return
     }
     setBusy(true)
@@ -268,8 +282,14 @@ export function CameraApp() {
                   Hidupkan kamera
                 </Button>
                 {mode === 'enroll' ? (
-                  <Button variant="outline" onClick={() => void captureSample()} disabled={busy}>
-                    Ambil sampel ({samples.length}/5)
+                  <Button
+                    variant="outline"
+                    onClick={() => void captureSample()}
+                    disabled={busy || samples.length >= captureGuides.length}
+                  >
+                    {samples.length >= captureGuides.length
+                      ? 'Sampel lengkap'
+                      : `Ambil gambar ${samples.length + 1}/${captureGuides.length}`}
                   </Button>
                 ) : null}
                 <span className="text-sm text-muted-foreground">
@@ -280,29 +300,87 @@ export function CameraApp() {
               {message ? <p className="text-sm">{message}</p> : null}
 
               {mode === 'enroll' ? (
-                <div className="grid gap-3 sm:grid-cols-2">
-                  <div className="flex flex-col gap-1.5">
-                    <Label htmlFor="code">Kode / NIP</Label>
-                    <Input
-                      id="code"
-                      value={code}
-                      onChange={(e) => setCode(e.target.value)}
-                      placeholder="EMP-001"
-                    />
+                <div className="flex flex-col gap-4">
+                  <div className="rounded-lg border border-border bg-muted/40 p-4">
+                    <div className="mb-3 flex items-start justify-between gap-3">
+                      <div>
+                        <p className="text-xs font-medium uppercase tracking-wide text-muted-foreground">
+                          Panduan pengambilan wajah
+                        </p>
+                        <p className="mt-1 font-medium">
+                          {samples.length < captureGuides.length
+                            ? captureGuides[samples.length].title
+                            : 'Semua pose selesai'}
+                        </p>
+                        <p className="mt-0.5 text-sm text-muted-foreground">
+                          {samples.length < captureGuides.length
+                            ? captureGuides[samples.length].instruction
+                            : 'Kelima variasi wajah sudah direkam.'}
+                        </p>
+                      </div>
+                      <Badge variant={samples.length === captureGuides.length ? 'default' : 'secondary'}>
+                        {samples.length}/{captureGuides.length}
+                      </Badge>
+                    </div>
+                    <ol className="grid grid-cols-5 gap-2" aria-label="Progres pengambilan wajah">
+                      {captureGuides.map((guide, index) => {
+                        const complete = index < samples.length
+                        const active = index === samples.length
+                        return (
+                          <li
+                            key={guide.title}
+                            className={`flex min-w-0 flex-col items-center gap-1 rounded-md border px-1 py-2 text-center text-xs ${
+                              active ? 'border-primary bg-background' : 'border-transparent'
+                            }`}
+                            aria-current={active ? 'step' : undefined}
+                          >
+                            <span
+                              className={`flex size-6 items-center justify-center rounded-full ${
+                                complete
+                                  ? 'bg-primary text-primary-foreground'
+                                  : active
+                                    ? 'border border-primary text-primary'
+                                    : 'border border-border text-muted-foreground'
+                              }`}
+                            >
+                              {complete ? <Check className="size-3.5" /> : index + 1}
+                            </span>
+                            <span className="hidden truncate text-muted-foreground sm:block">
+                              {guide.title}
+                            </span>
+                          </li>
+                        )
+                      })}
+                    </ol>
                   </div>
-                  <div className="flex flex-col gap-1.5">
-                    <Label htmlFor="name">Nama</Label>
-                    <Input
-                      id="name"
-                      value={fullName}
-                      onChange={(e) => setFullName(e.target.value)}
-                      placeholder="Nama lengkap"
-                    />
-                  </div>
-                  <div className="sm:col-span-2">
-                    <Button onClick={() => void submitEnroll()} disabled={busy || samples.length < 1}>
-                      Simpan ke database
-                    </Button>
+
+                  <div className="grid gap-3 sm:grid-cols-2">
+                    <div className="flex flex-col gap-1.5">
+                      <Label htmlFor="code">Kode / NIP</Label>
+                      <Input
+                        id="code"
+                        value={code}
+                        onChange={(e) => setCode(e.target.value)}
+                        placeholder="EMP-001"
+                      />
+                    </div>
+                    <div className="flex flex-col gap-1.5">
+                      <Label htmlFor="name">Nama</Label>
+                      <Input
+                        id="name"
+                        value={fullName}
+                        onChange={(e) => setFullName(e.target.value)}
+                        placeholder="Nama lengkap"
+                      />
+                    </div>
+                    <div className="sm:col-span-2">
+                      <Button
+                        onClick={() => void submitEnroll()}
+                        disabled={busy || samples.length < captureGuides.length}
+                      >
+                        Simpan ke database
+                      </Button>
+                    </div>
                   </div>
                 </div>
               ) : (
